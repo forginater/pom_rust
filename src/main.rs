@@ -109,23 +109,40 @@ enum IntervalType {
 }
 
 fn timer_logic(interval_len: Duration, num_intervals: usize, break_len: Duration) {
+    let interval_seconds = interval_len.as_secs();
+    println!("\nPomodoro Timer Started: {num_intervals} intervals of {interval_seconds} ");
+
     for interval in 1..=num_intervals {
         countdown(IntervalType::Work, interval_len, interval);
-        println!("interval #{}", interval);
 
         if break_len > Duration::from_secs(0) && interval < num_intervals {
             countdown(IntervalType::Break, break_len, interval);
-            println!("break #{}", interval);
         }
     }
+    println!("\nPomodoro completed");
 }
 
 fn countdown(interval_type: IntervalType, duration: Duration, interval_number: usize) {
-    // Check what type of interval
-    let interval_label = match interval_type {
-        IntervalType::Work => "Work",
-        IntervalType::Break => "Break",
+    for remaining in (0..=duration.as_secs()).rev() {
+        let init_msg = match interval_type {
+            IntervalType::Work => {
+                format!("\rInterval #{}: {}s remaining", interval_number, remaining)
+            }
+            IntervalType::Break => format!("\rBreak Time: {}s remaining", remaining),
+        };
+
+        print!("{}", init_msg);
+        std::io::stdout().flush().expect("Failed to flush stdout");
+        std::thread::sleep(Duration::from_secs(1));
+    }
+
+    let done_msg = match interval_type {
+        IntervalType::Work => {
+            format!("\rInterval #{} done  \x1B[K", interval_number)
+        }
+        IntervalType::Break => format!("\rBreak Done \x1B[K"),
     };
+    println!("{}", done_msg);
 }
 
 /*SCRQAPLANDLK */
