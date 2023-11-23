@@ -2,14 +2,9 @@ use std::io::Write;
 use std::time::Duration; // Trait needs to be in scope use stdout.flush().... ??
 
 // TODO
-// Dynamic logs (time remaining)
-// Add a work intended user input at beginning
-
 // Add pause/resume functionality
-// Add a break interval
 // Add Prompt at end to check productivity, relevance etc
 // write results to file or database
-
 // prettify terminal output
 // Utilise custom errors and implement fmt
 
@@ -26,7 +21,7 @@ fn main() {
     let break_interval = get_break_interval();
 
     // Get planned activity
-    let _activity = get_planned_action();
+    // let _activity = get_planned_action();
 
     // timer_logic(interval_len, num_intervals);
     // timer_logic_dynamic(interval_len, num_intervals);
@@ -173,45 +168,7 @@ fn _timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
     println!("\nPomodoro completed");
 }
 
-// Contract with compiler, it cannot know which variant of the enum, just that it's an enum of type "Thing"
-// Whereas it does know for struct
-// enum Thing {
-//     Cat,
-//     Dog,
-// }
-
 // Alternate way to handle Result Enums
 // if let Err(e) = std::io::stdout().flush() {
 //     eprintln!("Failed to flush stdout: {}", e);
-// }
-
-// fn _timer_logic_dynamic_first(interval_len: Duration, num_intervals: usize) {
-//     let mut intervals_done = 0;
-//     let interval_seconds = interval_len.as_secs();
-
-//     println!("\nPomodoro Timer Started: {num_intervals} intervals of {interval_seconds} ");
-
-//     while intervals_done < num_intervals {
-//         print!("Interval {}: ", intervals_done + 1);
-
-//         // loop for each second of the interval (counting down to 0)
-//         for remaining in (0..=interval_seconds).rev() {
-//             // Print the countdown message
-//             //  Note: carriage return '\r' moves cursor to beginning of line which allows us to overwrite
-//             print!(
-//                 "\rInterval #{}: {}s remaining",
-//                 intervals_done + 1,
-//                 remaining
-//             );
-//             // Flush output to terminal:
-//             //  - Neccessary because Rust's stdout is line-buffered by default
-//             //  - without flushing, output may not appear immediately
-//             std::io::stdout().flush().unwrap();
-//             // wait 1 second
-//             std::thread::sleep(Duration::from_secs(1));
-//         }
-//         intervals_done += 1;
-//         println!("\rInterval #{} done  \x1B[K", intervals_done);
-//     }
-//     println!("\nPomodoro completed");
 // }
