@@ -70,7 +70,7 @@ fn get_string_from_terminal(input_prompt: &str) -> String {
             Ok(_) => {
                 // Check the string is valid
                 let trimmed = buffer.trim();
-                if !trimmed.is_empty() && trimmed.len() > 5 {
+                if !trimmed.is_empty() {
                     return trimmed.to_string(); // convert from &str to String
                 } else {
                     eprintln!("Input cannot be empty: Try again {buffer:?}");
@@ -108,13 +108,27 @@ enum IntervalType {
     Break,
 }
 
-fn timer_logic(interval_len: Duration, num_intervals: usize, break_interval: Duration) {
+fn timer_logic(interval_len: Duration, num_intervals: usize, break_len: Duration) {
     for interval in 1..=num_intervals {
         countdown(IntervalType::Work, interval_len, interval);
+        println!("interval #{}", interval);
+
+        if break_len > Duration::from_secs(0) && interval < num_intervals {
+            countdown(IntervalType::Break, break_len, interval);
+            println!("break #{}", interval);
+        }
     }
 }
 
-fn countdown(interval_type: IntervalType, interval_len: Duration, interval_number: usize) {}
+fn countdown(interval_type: IntervalType, duration: Duration, interval_number: usize) {
+    // Check what type of interval
+    let interval_label = match interval_type {
+        IntervalType::Work => "Work",
+        IntervalType::Break => "Break",
+    };
+}
+
+/*SCRQAPLANDLK */
 
 fn _timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
     let interval_seconds = interval_len.as_secs();
@@ -141,8 +155,6 @@ fn _timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
     }
     println!("\nPomodoro completed");
 }
-
-/*SCRQAPLANDLK */
 
 // Contract with compiler, it cannot know which variant of the enum, just that it's an enum of type "Thing"
 // Whereas it does know for struct
