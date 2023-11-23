@@ -1,13 +1,12 @@
-use std::time::Duration;
+use std::io::Write;
+use std::time::Duration; // Trait needs to be in scope use stdout.flush().... ??
 
 // TODO
-// Dynamic logs (time remaining)
-// prettify terminal output
 // Add pause/resume functionality
-// Add a break interval
-// Add a work intended user input at beginning
 // Add Prompt at end to check productivity, relevance etc
 // write results to file or database
+// prettify terminal output
+// Utilise custom errors and implement fmt
 
 fn main() {
     // Pom takes user input (numIntervals, intervalLen) and runs a timer numIntervals times each for a length of intervalLen
@@ -18,11 +17,15 @@ fn main() {
     // Get user input (intervalLen)
     let interval_len = get_interval_len();
 
+    // Get break interval
+    let break_interval = get_break_interval();
+
     // Get planned activity
-    let _activity = get_planned_action();
+    // let _activity = get_planned_action();
 
     // timer_logic(interval_len, num_intervals);
-    timer_logic_dynamic(interval_len, num_intervals);
+    // timer_logic_dynamic(interval_len, num_intervals);
+    timer_logic(interval_len, num_intervals, break_interval);
 }
 
 /*
@@ -62,7 +65,7 @@ fn get_string_from_terminal(input_prompt: &str) -> String {
             Ok(_) => {
                 // Check the string is valid
                 let trimmed = buffer.trim();
-                if !trimmed.is_empty() && trimmed.len() > 5 {
+                if !trimmed.is_empty() {
                     return trimmed.to_string(); // convert from &str to String
                 } else {
                     eprintln!("Input cannot be empty: Try again {buffer:?}");
@@ -82,6 +85,11 @@ fn get_interval_len() -> Duration {
     return std::time::Duration::from_secs(interval_len_input as u64);
 }
 
+fn get_break_interval() -> Duration {
+    let break_interval = get_num_from_terminal("Enter length of break interval, or 0 if no breaks");
+    return std::time::Duration::from_secs(break_interval as u64);
+}
+
 fn get_planned_action() -> String {
     return get_string_from_terminal("What activity will you work on?");
 }
@@ -90,27 +98,51 @@ fn get_planned_action() -> String {
     Timer Logic
 */
 
-fn _timer_logic(interval_len: Duration, num_intervals: usize) {
-    let mut intervals_done = 0;
-
-    // Run the timer logic
-    //  - Print timer start
-    println!("\n\ntimer started");
-
-    //  - If intervalsDone < numIntervals increment intervalsDone, otherwise run the timer again
-    while intervals_done < num_intervals {
-        //  - Run sleep for intervalLen
-        std::thread::sleep(interval_len);
-        intervals_done += 1;
-        println!("interval #{intervals_done} done");
-    }
-    //  - Print all intervals done
-    println!("all Done");
+enum IntervalType {
+    Work,
+    Break,
 }
 
-use std::io::Write; // Trait needs to be in scope use stdout.flush().... ??
+fn timer_logic(interval_len: Duration, num_intervals: usize, break_len: Duration) {
+    let interval_seconds = interval_len.as_secs();
+    println!("\nPomodoro Timer Started: {num_intervals} intervals of {interval_seconds} ");
 
-fn timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
+    for interval in 1..=num_intervals {
+        countdown(IntervalType::Work, interval_len, interval);
+
+        if break_len > Duration::from_secs(0) && interval < num_intervals {
+            countdown(IntervalType::Break, break_len, interval);
+        }
+    }
+    println!("\nPomodoro completed");
+}
+
+fn countdown(interval_type: IntervalType, duration: Duration, interval_number: usize) {
+    for remaining in (0..=duration.as_secs()).rev() {
+        let init_msg = match interval_type {
+            IntervalType::Work => {
+                format!("\rInterval #{}: {}s remaining", interval_number, remaining)
+            }
+            IntervalType::Break => format!("\rBreak Time: {}s remaining", remaining),
+        };
+
+        print!("{}", init_msg);
+        std::io::stdout().flush().expect("Failed to flush stdout");
+        std::thread::sleep(Duration::from_secs(1));
+    }
+
+    let done_msg = match interval_type {
+        IntervalType::Work => {
+            format!("\rInterval #{} done  \x1B[K", interval_number)
+        }
+        IntervalType::Break => format!("\rBreak Done \x1B[K"),
+    };
+    println!("{}", done_msg);
+}
+
+/*SCRQAPLANDLK */
+
+fn _timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
     let interval_seconds = interval_len.as_secs();
 
     println!("\nPomodoro Timer Started: {num_intervals} intervals of {interval_seconds} ");
@@ -136,47 +168,7 @@ fn timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
     println!("\nPomodoro completed");
 }
 
-/*SCRQAPLANDLK */
-
-// Contract with compiler, it cannot know which variant of the enum, just that it's an enum of type "Thing"
-// Whereas it does know for struct
-// enum Thing {
-//     Cat,
-//     Dog,
-// }
-
 // Alternate way to handle Result Enums
 // if let Err(e) = std::io::stdout().flush() {
 //     eprintln!("Failed to flush stdout: {}", e);
-// }
-
-// fn _timer_logic_dynamic_first(interval_len: Duration, num_intervals: usize) {
-//     let mut intervals_done = 0;
-//     let interval_seconds = interval_len.as_secs();
-
-//     println!("\nPomodoro Timer Started: {num_intervals} intervals of {interval_seconds} ");
-
-//     while intervals_done < num_intervals {
-//         print!("Interval {}: ", intervals_done + 1);
-
-//         // loop for each second of the interval (counting down to 0)
-//         for remaining in (0..=interval_seconds).rev() {
-//             // Print the countdown message
-//             //  Note: carriage return '\r' moves cursor to beginning of line which allows us to overwrite
-//             print!(
-//                 "\rInterval #{}: {}s remaining",
-//                 intervals_done + 1,
-//                 remaining
-//             );
-//             // Flush output to terminal:
-//             //  - Neccessary because Rust's stdout is line-buffered by default
-//             //  - without flushing, output may not appear immediately
-//             std::io::stdout().flush().unwrap();
-//             // wait 1 second
-//             std::thread::sleep(Duration::from_secs(1));
-//         }
-//         intervals_done += 1;
-//         println!("\rInterval #{} done  \x1B[K", intervals_done);
-//     }
-//     println!("\nPomodoro completed");
 // }
