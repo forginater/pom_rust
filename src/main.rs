@@ -1,5 +1,12 @@
 use std::time::Duration;
 
+// TODO
+// Dynamic logs (time remaining)
+// Add a break interval
+// Add a work intended user input at beginning
+// Add Prompt at end to check productivity, relevance etc
+// write results to file or database
+
 fn main() {
     // Pom takes user input (numIntervals, intervalLen) and runs a timer numIntervals times each for a length of intervalLen
 
@@ -9,9 +16,11 @@ fn main() {
     // Get user input (intervalLen)
     let interval_len = get_interval_len();
 
-    timer_logic(interval_len, num_intervals);
+    // timer_logic(interval_len, num_intervals);
+    timer_logic_dynamic(interval_len, num_intervals);
 }
 
+// &str can only read, we don't have ownership, unlike String.
 fn get_num_from_terminal(input_prompt: &str) -> usize {
     println!("{input_prompt}");
 
@@ -38,11 +47,11 @@ fn get_num_intervals() -> usize {
 }
 
 fn get_interval_len() -> Duration {
-    let interval_len_input = get_num_from_terminal("Enter length of interval");
+    let interval_len_input = get_num_from_terminal("Enter length of each interval (in minutes)");
     return std::time::Duration::from_secs(interval_len_input as u64);
 }
 
-fn timer_logic(interval_len: Duration, num_intervals: usize) {
+fn _timer_logic(interval_len: Duration, num_intervals: usize) {
     let mut intervals_done = 0;
 
     // Run the timer logic
@@ -56,9 +65,31 @@ fn timer_logic(interval_len: Duration, num_intervals: usize) {
         intervals_done += 1;
         println!("interval #{intervals_done} done");
     }
-
     //  - Print all intervals done
     println!("all Done");
+}
+
+use std::io::Write; // Trait needs to be in scope use stdout.flush().... ??
+
+fn timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
+    let mut intervals_done = 0;
+    let interval_seconds = interval_len.as_secs();
+
+    println!("\nPomodoro Timer Started:     {num_intervals} intervals of {interval_seconds} ");
+
+    while intervals_done < num_intervals {
+        print!("Interval {}: ", intervals_done + 1);
+
+        // For the interval, create an inclusive range and use to write a countdown in the terminal
+        for remaining in (0..=interval_seconds).rev() {
+            print!("\r{}s remaining", remaining);
+            std::io::stdout().flush().unwrap();
+            std::thread::sleep(Duration::from_secs(1));
+        }
+        intervals_done += 1;
+        println!("\rInterval #{} done", intervals_done);
+    }
+    println!("\nPomodoro completed");
 }
 
 /*SCRQAPLANDLK */
