@@ -2,6 +2,7 @@ use std::time::Duration;
 
 // TODO
 // Dynamic logs (time remaining)
+// validation
 // Add a break interval
 // Add a work intended user input at beginning
 // Add Prompt at end to check productivity, relevance etc
@@ -75,19 +76,29 @@ fn timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
     let mut intervals_done = 0;
     let interval_seconds = interval_len.as_secs();
 
-    println!("\nPomodoro Timer Started:     {num_intervals} intervals of {interval_seconds} ");
+    println!("\nPomodoro Timer Started: {num_intervals} intervals of {interval_seconds} ");
 
     while intervals_done < num_intervals {
         print!("Interval {}: ", intervals_done + 1);
 
-        // For the interval, create an inclusive range and use to write a countdown in the terminal
+        // loop for each second of the interval (counting down to 0)
         for remaining in (0..=interval_seconds).rev() {
-            print!("\r{}s remaining", remaining);
+            // Print the countdown message
+            //  Note: carriage return '\r' moves cursor to beginning of line which allows us to overwrite
+            print!(
+                "\rInterval #{}: {}s remaining",
+                intervals_done + 1,
+                remaining
+            );
+            // Flush output to terminal:
+            //  - Neccessary because Rust's stdout is line-buffered by default
+            //  - without flushing, output may not appear immediately
             std::io::stdout().flush().unwrap();
+            // wait 1 second
             std::thread::sleep(Duration::from_secs(1));
         }
         intervals_done += 1;
-        println!("\rInterval #{} done", intervals_done);
+        println!("\rInterval #{} done  \x1B[K", intervals_done);
     }
     println!("\nPomodoro completed");
 }
