@@ -29,7 +29,8 @@ fn main() {
     let _activity = get_planned_action();
 
     // timer_logic(interval_len, num_intervals);
-    timer_logic_dynamic(interval_len, num_intervals);
+    // timer_logic_dynamic(interval_len, num_intervals);
+    timer_logic(interval_len, num_intervals, break_interval);
 }
 
 /*
@@ -102,7 +103,20 @@ fn get_planned_action() -> String {
     Timer Logic
 */
 
-fn timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
+enum IntervalType {
+    Work,
+    Break,
+}
+
+fn timer_logic(interval_len: Duration, num_intervals: usize, break_interval: Duration) {
+    for interval in 1..=num_intervals {
+        countdown(IntervalType::Work, interval_len, interval);
+    }
+}
+
+fn countdown(interval_type: IntervalType, interval_len: Duration, interval_number: usize) {}
+
+fn _timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
     let interval_seconds = interval_len.as_secs();
 
     println!("\nPomodoro Timer Started: {num_intervals} intervals of {interval_seconds} ");
