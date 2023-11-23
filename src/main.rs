@@ -1,13 +1,17 @@
-use std::time::Duration;
+use std::io::Write;
+use std::time::Duration; // Trait needs to be in scope use stdout.flush().... ??
 
 // TODO
 // Dynamic logs (time remaining)
-// prettify terminal output
+// Add a work intended user input at beginning
+
 // Add pause/resume functionality
 // Add a break interval
-// Add a work intended user input at beginning
 // Add Prompt at end to check productivity, relevance etc
 // write results to file or database
+
+// prettify terminal output
+// Utilise custom errors and implement fmt
 
 fn main() {
     // Pom takes user input (numIntervals, intervalLen) and runs a timer numIntervals times each for a length of intervalLen
@@ -17,6 +21,9 @@ fn main() {
 
     // Get user input (intervalLen)
     let interval_len = get_interval_len();
+
+    // Get break interval
+    let break_interval = get_break_interval();
 
     // Get planned activity
     let _activity = get_planned_action();
@@ -82,6 +89,11 @@ fn get_interval_len() -> Duration {
     return std::time::Duration::from_secs(interval_len_input as u64);
 }
 
+fn get_break_interval() -> Duration {
+    let break_interval = get_num_from_terminal("Enter length of break interval, or 0 if no breaks");
+    return std::time::Duration::from_secs(break_interval as u64);
+}
+
 fn get_planned_action() -> String {
     return get_string_from_terminal("What activity will you work on?");
 }
@@ -89,26 +101,6 @@ fn get_planned_action() -> String {
 /*
     Timer Logic
 */
-
-fn _timer_logic(interval_len: Duration, num_intervals: usize) {
-    let mut intervals_done = 0;
-
-    // Run the timer logic
-    //  - Print timer start
-    println!("\n\ntimer started");
-
-    //  - If intervalsDone < numIntervals increment intervalsDone, otherwise run the timer again
-    while intervals_done < num_intervals {
-        //  - Run sleep for intervalLen
-        std::thread::sleep(interval_len);
-        intervals_done += 1;
-        println!("interval #{intervals_done} done");
-    }
-    //  - Print all intervals done
-    println!("all Done");
-}
-
-use std::io::Write; // Trait needs to be in scope use stdout.flush().... ??
 
 fn timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
     let interval_seconds = interval_len.as_secs();
