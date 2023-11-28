@@ -31,7 +31,7 @@ fn main() {
     let _activity = get_planned_action();
 
     // Run the pomodoro timer
-    let mode = "resume";
+    let mode = "pause";
     if mode == "pause" {
         timer_logic_can_pause(interval_len, num_intervals, break_interval);
     }
