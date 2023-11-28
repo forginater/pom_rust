@@ -15,10 +15,10 @@ fn main() {
     let num_intervals = get_num_intervals();
 
     // Get user input (intervalLen)
-    let interval_len = get_interval_len();
+    let interval_len = get_work_interval_len();
 
     // Get break interval
-    let break_interval = get_break_interval();
+    let break_interval = get_break_interval_len();
 
     // Get planned activity
     // let _activity = get_planned_action();
@@ -80,12 +80,12 @@ fn get_num_intervals() -> usize {
     return get_num_from_terminal("Enter number of intervals");
 }
 
-fn get_interval_len() -> Duration {
+fn get_work_interval_len() -> Duration {
     let interval_len_input = get_num_from_terminal("Enter length of each interval (in minutes)");
     return std::time::Duration::from_secs(interval_len_input as u64);
 }
 
-fn get_break_interval() -> Duration {
+fn get_break_interval_len() -> Duration {
     let break_interval = get_num_from_terminal("Enter length of break interval, or 0 if no breaks");
     return std::time::Duration::from_secs(break_interval as u64);
 }
@@ -103,24 +103,26 @@ enum IntervalType {
     Break,
 }
 
-fn timer_logic(interval_len: Duration, num_intervals: usize, break_len: Duration) {
-    let interval_seconds = interval_len.as_secs();
+// Run the timer alternating between num_intervals of interval_len seconds and break intervals for break_len seconds.
+fn timer_logic(work_interval_len: Duration, num_intervals: usize, break_interval_len: Duration) {
+    let interval_seconds = work_interval_len.as_secs();
     println!("\nPomodoro Timer Started: {num_intervals} intervals of {interval_seconds} ");
 
     // Loop through each interval
     for interval in 1..=num_intervals {
         // Run work interval
-        countdown(IntervalType::Work, interval_len, interval);
+        countdown(IntervalType::Work, work_interval_len, interval);
 
         // Run Work interval if requested except after the last work interval
-        if break_len > Duration::from_secs(0) && interval < num_intervals {
-            countdown(IntervalType::Break, break_len, interval);
+        if break_interval_len > Duration::from_secs(0) && interval < num_intervals {
+            countdown(IntervalType::Break, break_interval_len, interval);
         }
     }
     println!("\nPomodoro completed");
 }
 
-fn countdown(interval_type: IntervalType, duration: Duration, interval_number: usize) {
+// For a given interval
+fn countdown(interval_type: IntervalType, interval_duration: Duration, interval_number: usize) {
     let done_msg = match interval_type {
         IntervalType::Work => {
             format!("\rInterval #{} done  \x1B[K", interval_number)
@@ -129,7 +131,7 @@ fn countdown(interval_type: IntervalType, duration: Duration, interval_number: u
     };
 
     // loop for each second of the interval (counting down to 0)
-    for remaining in (0..=duration.as_secs()).rev() {
+    for remaining in (0..=interval_duration.as_secs()).rev() {
         let init_msg = match interval_type {
             IntervalType::Work => {
                 format!("\rInterval #{}: {}s remaining", interval_number, remaining)
@@ -146,7 +148,7 @@ fn countdown(interval_type: IntervalType, duration: Duration, interval_number: u
 }
 
 /*SCRQAPLANDLK */
-
+// Original implementation (before adding dynamic messaging to terminal)
 fn _timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
     let interval_seconds = interval_len.as_secs();
 
