@@ -1,34 +1,7 @@
+// #![allow(unused)]
+// Above suppressed warning for whole file
+
 /*Scrap Code */
-
-// For a given interval
-fn _countdown_no_pause(
-    interval_type: IntervalType,
-    interval_duration: Duration,
-    interval_number: usize,
-) {
-    let done_msg = match interval_type {
-        IntervalType::Work => {
-            format!("\rInterval #{} done  \x1B[K", interval_number)
-        }
-        IntervalType::Break => format!("\rBreak Done \x1B[K"),
-    };
-
-    // loop for each second of the interval (counting down to 0)
-    for remaining in (0..=interval_duration.as_secs()).rev() {
-        let init_msg = match interval_type {
-            IntervalType::Work => {
-                format!("\rInterval #{}: {}s remaining", interval_number, remaining)
-            }
-            IntervalType::Break => format!("\rBreak Time: {}s remaining", remaining),
-        };
-
-        print!("{}", init_msg);
-        std::io::stdout().flush().expect("Failed to flush stdout");
-        std::thread::sleep(Duration::from_secs(1));
-    }
-
-    println!("{}", done_msg);
-}
 
 // Original implementation (before adding dynamic messaging to terminal)
 fn _timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {

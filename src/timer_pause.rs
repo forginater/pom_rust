@@ -12,6 +12,10 @@ pub fn timer_logic_can_pause(
     num_intervals: usize,
     break_interval_len: Duration,
 ) {
+    timer_logic(work_interval_len, num_intervals, break_interval_len);
+}
+
+fn timer_logic(work_interval_len: Duration, num_intervals: usize, break_interval_len: Duration) {
     let interval_seconds = work_interval_len.as_secs();
     println!("\nPomodoro Timer Started: {num_intervals} intervals of {interval_seconds} ");
 
@@ -28,7 +32,14 @@ pub fn timer_logic_can_pause(
     println!("\nPomodoro completed");
 }
 
-fn countdown(interval_type: IntervalType, duration: Duration, interval_number: usize) {
+fn countdown(interval_type: IntervalType, duration: Duration, interval_number: usize) {}
+
+/*
+    Polling Approach: Fails due to std::io::stdin().read_line blocking program execution
+*/
+
+#[allow(unused)]
+fn countdown_fail(interval_type: IntervalType, duration: Duration, interval_number: usize) {
     let mut remaining = duration.as_secs();
 
     while remaining > 0 {
@@ -90,6 +101,7 @@ fn wait_for_resume() {
     }
 }
 
+#[allow(unused)]
 pub fn test_check_for_input() {
     loop {
         match check_for_input() {
