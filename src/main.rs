@@ -147,7 +147,7 @@ fn countdown(interval_type: IntervalType, interval_duration: Duration, interval_
     println!("{}", done_msg);
 }
 
-// Monitor user input, if "p" entered into terminal, pause the timer
+// Monitor user input, "p" followed by Enter will pause the timer
 fn check_for_input() -> Option<char> {
     let mut buffer = String::new();
     println!("Press 'p' to pause followed by 'Enter'");
@@ -159,13 +159,27 @@ fn check_for_input() -> Option<char> {
     return None;
 }
 
-// fn check_for_resume() ->
+// Block the program and wait for user to press 'r' to resume the timer
+fn wait_for_resume() {
+    let mut buffer = String::new();
+    println!("Timer paused. Press 'r' then 'Enter' to resume");
+    loop {
+        if let Ok(_) = std::io::stdin().read_line(&mut buffer) {
+            if buffer.trim() == "r" {
+                println!("Timer Resumed");
+                break;
+            }
+            buffer.clear();
+        }
+    }
+}
 
 fn test_check_for_input() {
     loop {
         match check_for_input() {
             Some('p') => {
                 println!("Paused");
+                wait_for_resume();
                 break;
             }
             _ => {
