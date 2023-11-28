@@ -9,8 +9,8 @@ use std::time::Duration; // Trait needs to be in scope use stdout.flush().... ??
 // Utilise custom errors and implement fmt
 
 fn main() {
+    test_check_for_input();
     // Pom takes user input (numIntervals, intervalLen) and runs a timer numIntervals times each for a length of intervalLen
-
     // Get user input (numIntervals)
     let num_intervals = get_num_intervals();
 
@@ -157,6 +157,22 @@ fn check_for_input() -> Option<char> {
         }
     }
     return None;
+}
+
+// fn check_for_resume() ->
+
+fn test_check_for_input() {
+    loop {
+        match check_for_input() {
+            Some('p') => {
+                println!("Paused");
+                break;
+            }
+            _ => {
+                println!("Waiting for 'p' to pause...");
+            }
+        }
+    }
 }
 
 /*SCRQAPLANDLK */
