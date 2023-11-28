@@ -1,6 +1,11 @@
-use std::io::Write;
-use std::time::Duration; // Trait needs to be in scope use stdout.flush().... ??
-
+mod user_input;
+use user_input::{
+    get_break_interval_len, get_num_intervals, get_planned_action, get_work_interval_len,
+};
+mod timer;
+use timer::timer_logic;
+mod timer_pause;
+use timer_pause::timer_logic_can_pause;
 // TODO
 // Add pause/resume functionality
 // Add Prompt at end to check productivity, relevance etc
@@ -9,7 +14,9 @@ use std::time::Duration; // Trait needs to be in scope use stdout.flush().... ??
 // Utilise custom errors and implement fmt
 
 fn main() {
-    test_check_for_input();
+    // TEST pause/resume functions
+    // test_check_for_input();
+
     // Pom takes user input (numIntervals, intervalLen) and runs a timer numIntervals times each for a length of intervalLen
     // Get user input (numIntervals)
     let num_intervals = get_num_intervals();
@@ -21,203 +28,13 @@ fn main() {
     let break_interval = get_break_interval_len();
 
     // Get planned activity
-    // let _activity = get_planned_action();
+    let _activity = get_planned_action();
 
-    // timer_logic(interval_len, num_intervals);
-    // timer_logic_dynamic(interval_len, num_intervals);
-    timer_logic(interval_len, num_intervals, break_interval);
-}
-
-/*
-    User Input
-*/
-
-// &str can only read, we don't have ownership, unlike String.
-fn get_num_from_terminal(input_prompt: &str) -> usize {
-    println!("{input_prompt}: ");
-
-    let mut buffer = String::new();
-    loop {
-        // reference (rust concept) wraps a pointer with addtional info
-        let result: Result<usize, std::io::Error> = std::io::stdin().read_line(&mut buffer);
-        // Result used when could be runtime error
-        match result {
-            Err(_) => panic!("PANIC"),
-            _ => {} // Any other enum variants, don't care.... "_" wildcard for variants
-        };
-        // validate input
-        // - Need to trim the '\n' from the buffer string before parsing
-        match buffer.trim().parse::<usize>() {
-            Ok(num) => return num,
-            Err(e) => eprintln!("Try again dickhead: {e} \nbuffer: {buffer:?}"),
-        };
-        buffer.clear();
+    // Run the pomodoro timer
+    let mode = "pause";
+    if mode == "pause" {
+        timer_logic_can_pause(interval_len, num_intervals, break_interval);
+    } else {
+        timer_logic(interval_len, num_intervals, break_interval);
     }
 }
-
-fn get_string_from_terminal(input_prompt: &str) -> String {
-    println!("{input_prompt}");
-
-    let mut buffer = String::new();
-    loop {
-        match std::io::stdin().read_line(&mut buffer) {
-            Err(_) => eprintln!("Error reading input: Try again"),
-            Ok(_) => {
-                // Check the string is valid
-                let trimmed = buffer.trim();
-                if !trimmed.is_empty() {
-                    return trimmed.to_string(); // convert from &str to String
-                } else {
-                    eprintln!("Input cannot be empty: Try again {buffer:?}");
-                }
-            }
-        }
-        buffer.clear();
-    }
-}
-
-fn get_num_intervals() -> usize {
-    return get_num_from_terminal("Enter number of intervals");
-}
-
-fn get_work_interval_len() -> Duration {
-    let interval_len_input = get_num_from_terminal("Enter length of each interval (in minutes)");
-    return std::time::Duration::from_secs(interval_len_input as u64);
-}
-
-fn get_break_interval_len() -> Duration {
-    let break_interval = get_num_from_terminal("Enter length of break interval, or 0 if no breaks");
-    return std::time::Duration::from_secs(break_interval as u64);
-}
-
-fn get_planned_action() -> String {
-    return get_string_from_terminal("What activity will you work on?");
-}
-
-/*
-    Timer Logic
-*/
-
-enum IntervalType {
-    Work,
-    Break,
-}
-
-// Run the timer alternating between num_intervals of interval_len seconds and break intervals for break_len seconds.
-fn timer_logic(work_interval_len: Duration, num_intervals: usize, break_interval_len: Duration) {
-    let interval_seconds = work_interval_len.as_secs();
-    println!("\nPomodoro Timer Started: {num_intervals} intervals of {interval_seconds} ");
-
-    // Loop through each interval
-    for interval in 1..=num_intervals {
-        // Run work interval
-        countdown(IntervalType::Work, work_interval_len, interval);
-
-        // Run Work interval if requested except after the last work interval
-        if break_interval_len > Duration::from_secs(0) && interval < num_intervals {
-            countdown(IntervalType::Break, break_interval_len, interval);
-        }
-    }
-    println!("\nPomodoro completed");
-}
-
-// For a given interval
-fn countdown(interval_type: IntervalType, interval_duration: Duration, interval_number: usize) {
-    let done_msg = match interval_type {
-        IntervalType::Work => {
-            format!("\rInterval #{} done  \x1B[K", interval_number)
-        }
-        IntervalType::Break => format!("\rBreak Done \x1B[K"),
-    };
-
-    // loop for each second of the interval (counting down to 0)
-    for remaining in (0..=interval_duration.as_secs()).rev() {
-        let init_msg = match interval_type {
-            IntervalType::Work => {
-                format!("\rInterval #{}: {}s remaining", interval_number, remaining)
-            }
-            IntervalType::Break => format!("\rBreak Time: {}s remaining", remaining),
-        };
-
-        print!("{}", init_msg);
-        std::io::stdout().flush().expect("Failed to flush stdout");
-        std::thread::sleep(Duration::from_secs(1));
-    }
-
-    println!("{}", done_msg);
-}
-
-// Monitor user input, "p" followed by Enter will pause the timer
-fn check_for_input() -> Option<char> {
-    let mut buffer = String::new();
-    println!("Press 'p' to pause followed by 'Enter'");
-    if let Ok(_) = std::io::stdin().read_line(&mut buffer) {
-        if buffer.trim() == "p" {
-            return Some('p');
-        }
-    }
-    return None;
-}
-
-// Block the program and wait for user to press 'r' to resume the timer
-fn wait_for_resume() {
-    let mut buffer = String::new();
-    println!("Timer paused. Press 'r' then 'Enter' to resume");
-    loop {
-        if let Ok(_) = std::io::stdin().read_line(&mut buffer) {
-            if buffer.trim() == "r" {
-                println!("Timer Resumed");
-                break;
-            }
-            buffer.clear();
-        }
-    }
-}
-
-fn test_check_for_input() {
-    loop {
-        match check_for_input() {
-            Some('p') => {
-                println!("Paused");
-                wait_for_resume();
-                break;
-            }
-            _ => {
-                println!("Waiting for 'p' to pause...");
-            }
-        }
-    }
-}
-
-/*SCRQAPLANDLK */
-// Original implementation (before adding dynamic messaging to terminal)
-fn _timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
-    let interval_seconds = interval_len.as_secs();
-
-    println!("\nPomodoro Timer Started: {num_intervals} intervals of {interval_seconds} ");
-
-    // loop through each interval
-    for interval in 1..=num_intervals {
-        // loop for each second of the interval (counting down to 0)
-        for remaining in (0..=interval_seconds).rev() {
-            // Print the countdown message
-            //  Note: carriage return '\r' moves cursor to beginning of line which allows us to overwrite
-            print!("\rInterval #{}: {}s remaining", interval, remaining);
-            // Flush output to terminal:
-            //  - Neccessary because Rust's stdout is line-buffered by default
-            //  - Without flushing, output may not appear immediately
-            std::io::stdout().flush().expect("Failed to flush stdout");
-            // wait 1 second
-            std::thread::sleep(Duration::from_secs(1));
-        }
-        // replace the line with done message:
-        //  - Note the ANSI escape sequence \x1B[K clears rest of line
-        println!("\rInterval #{} done  \x1B[K", interval);
-    }
-    println!("\nPomodoro completed");
-}
-
-// Alternate way to handle Result Enums
-// if let Err(e) = std::io::stdout().flush() {
-//     eprintln!("Failed to flush stdout: {}", e);
-// }
