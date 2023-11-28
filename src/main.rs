@@ -107,9 +107,12 @@ fn timer_logic(interval_len: Duration, num_intervals: usize, break_len: Duration
     let interval_seconds = interval_len.as_secs();
     println!("\nPomodoro Timer Started: {num_intervals} intervals of {interval_seconds} ");
 
+    // Loop through each interval
     for interval in 1..=num_intervals {
+        // Run work interval
         countdown(IntervalType::Work, interval_len, interval);
 
+        // Run Work interval if requested except after the last work interval
         if break_len > Duration::from_secs(0) && interval < num_intervals {
             countdown(IntervalType::Break, break_len, interval);
         }
@@ -118,6 +121,14 @@ fn timer_logic(interval_len: Duration, num_intervals: usize, break_len: Duration
 }
 
 fn countdown(interval_type: IntervalType, duration: Duration, interval_number: usize) {
+    let done_msg = match interval_type {
+        IntervalType::Work => {
+            format!("\rInterval #{} done  \x1B[K", interval_number)
+        }
+        IntervalType::Break => format!("\rBreak Done \x1B[K"),
+    };
+
+    // loop for each second of the interval (counting down to 0)
     for remaining in (0..=duration.as_secs()).rev() {
         let init_msg = match interval_type {
             IntervalType::Work => {
@@ -131,12 +142,6 @@ fn countdown(interval_type: IntervalType, duration: Duration, interval_number: u
         std::thread::sleep(Duration::from_secs(1));
     }
 
-    let done_msg = match interval_type {
-        IntervalType::Work => {
-            format!("\rInterval #{} done  \x1B[K", interval_number)
-        }
-        IntervalType::Break => format!("\rBreak Done \x1B[K"),
-    };
     println!("{}", done_msg);
 }
 
