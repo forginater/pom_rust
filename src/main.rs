@@ -147,6 +147,18 @@ fn countdown(interval_type: IntervalType, interval_duration: Duration, interval_
     println!("{}", done_msg);
 }
 
+// Monitor user input, if "p" entered into terminal, pause the timer
+fn check_for_input() -> Option<char> {
+    let mut buffer = String::new();
+    println!("Press 'p' to pause followed by 'Enter'");
+    if let Ok(_) = std::io::stdin().read_line(&mut buffer) {
+        if buffer.trim() == "p" {
+            return Some('p');
+        }
+    }
+    return None;
+}
+
 /*SCRQAPLANDLK */
 // Original implementation (before adding dynamic messaging to terminal)
 fn _timer_logic_dynamic(interval_len: Duration, num_intervals: usize) {
