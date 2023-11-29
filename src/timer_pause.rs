@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::io::{self, Write};
 use std::time::Duration; // Trait needs to be in scope use stdout.flush().... ??
 
 use crossterm::{
@@ -62,21 +62,20 @@ countdown() Overview:
 fn countdown(interval_type: IntervalType, duration: Duration, interval_number: usize) {
     let mut remaining: u64 = duration.as_secs();
     let mut is_paused: bool = false;
-
     while remaining > 0 {
         // Non-blocking check for user input to pause the timer
         //  - If an event is detected within 50ms, poll returns true
         //  - NOTE: this runs approximately once per loop iteration, however keyboard input during the "sleep" duration will is queued in system's input buffer
-        if event::poll(Duration::from_millis(50)).unwrap() {
-            println!(
-                "\n\r    => Poll with {} Interval #{}: {} seconds remaining",
-                match interval_type {
-                    IntervalType::Work => "Work",
-                    IntervalType::Break => "Break",
-                },
-                interval_number,
-                remaining
-            );
+        if event::poll(Duration::from_millis(1)).unwrap() {
+            // println!(
+            //     "\n\r    => Poll with {} Interval #{}: {} seconds remaining",
+            //     match interval_type {
+            //         IntervalType::Work => "Work",
+            //         IntervalType::Break => "Break",
+            //     },
+            //     interval_number,
+            //     remaining
+            // );
             // event::read returns next available user input
             let input_event = crossterm::event::read().unwrap();
             // Use a match statement to check for Key events (keyboard)
@@ -87,14 +86,18 @@ fn countdown(interval_type: IntervalType, duration: Duration, interval_number: u
                     // Check if the `code` KeyEvent is 'p'
                     match code {
                         KeyCode::Char('p') => {
-                            // toggle is_paused state and notify the user
+                            // toggle is_paused
                             is_paused = !is_paused;
+                            // If pausing notify user, resuming clear preceding two lines
                             if is_paused {
-                                println!("\n\rPaused. Press 'p' again to resume.");
+                                print!("\n\rPaused. Press 'p' again to resume");
                             } else {
-                                println!("\n\rResuming...");
+                                print!("\r \x1B[K"); // Clear current line
+                                print!("\x1B[A\x1B[K"); // Clear preceding line
                             }
-                            continue; // exit this iteration of the while loop
+                            io::stdout().flush().unwrap();
+                            // exit this iteration of the while loop
+                            // continue;
                         }
                         KeyCode::Char('c') if modifiers.contains(event::KeyModifiers::CONTROL) => {
                             // Handle Ctrl+C to exit
@@ -109,16 +112,14 @@ fn countdown(interval_type: IntervalType, duration: Duration, interval_number: u
             }
         }
 
-        // If running: proceed with countdown
+        // If timer running: update UI, sleep and proceed with countdown
         if !is_paused {
             display_countdown(&interval_type, interval_number, remaining);
             std::io::stdout().flush().expect("Failed to flush stdout");
-            std::thread::sleep(Duration::from_millis(900));
+            std::thread::sleep(Duration::from_millis(1000));
             remaining -= 1;
-            print!("    ##");
         } else {
-            println!("Paused");
-            // Avoid straining CPU with busy loop while paused
+            // Avoid straining CPU with busy loop while paused and make resume polling more frequent
             std::thread::sleep(Duration::from_millis(100));
         }
     }
