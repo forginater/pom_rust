@@ -50,49 +50,92 @@ fn timer_logic(work_interval_len: Duration, num_intervals: usize, break_interval
     );
 }
 
+fn handle_events() -> Option<bool> {
+    if event::poll(Duration::from_millis(1)).unwrap() {
+        let input_event = event::read().unwrap();
+        match input_event {
+            Event::Key(KeyEvent {
+                code, modifiers, ..
+            }) => {
+                match code {
+                    KeyCode::Char('p') => {
+                        return Some(true); //Indicate pause/resume
+                    }
+                    KeyCode::Char('c') if modifiers.contains(event::KeyModifiers::CONTROL) => {
+                        return None;
+                    }
+                    _ => {}
+                };
+            }
+            _ => {}
+        }
+    }
+    Some(false)
+}
+
 fn interval_countdown(interval_type: IntervalType, duration: Duration, interval_number: usize) {
     let mut remaining: u64 = duration.as_secs();
     let mut is_paused: bool = false;
     while remaining > 0 {
+        // Respond to keyboard events
+        match handle_events() {
+            Some(true) => {
+                is_paused = !is_paused;
+                if is_paused {
+                    print!("\n\rPaused. Press 'p' again to resume");
+                } else {
+                    print!("\r \x1B[K"); // Clear current line
+                    print!("\x1B[A\x1B[K"); // Clear preceding line
+                }
+                io::stdout().flush().unwrap();
+            }
+            None => {
+                // Handle Ctrl+C to exit
+                println!("Exiting...");
+                terminal::disable_raw_mode().expect("Failed to disable raw mode");
+                std::process::exit(0);
+            }
+            _ => {}
+        }
         // Non-blocking check for user input to pause the timer
         //  - If an event is detected within 50ms, poll returns true
         //  - NOTE: this runs approximately once per loop iteration, however keyboard input during the "sleep" duration will is queued in system's input buffer
-        if event::poll(Duration::from_millis(1)).unwrap() {
-            // event::read returns next available user input
-            let input_event = crossterm::event::read().unwrap();
-            // Use a match statement to check for Key events (keyboard)
-            match input_event {
-                Event::Key(KeyEvent {
-                    code, modifiers, ..
-                }) => {
-                    // Check if the `code` KeyEvent is 'p'
-                    match code {
-                        KeyCode::Char('p') => {
-                            // toggle is_paused
-                            is_paused = !is_paused;
-                            // If pausing notify user, resuming clear preceding two lines
-                            if is_paused {
-                                print!("\n\rPaused. Press 'p' again to resume");
-                            } else {
-                                print!("\r \x1B[K"); // Clear current line
-                                print!("\x1B[A\x1B[K"); // Clear preceding line
-                            }
-                            io::stdout().flush().unwrap();
-                            // exit this iteration of the loop if pausing or resuming
-                            continue;
-                        }
-                        KeyCode::Char('c') if modifiers.contains(event::KeyModifiers::CONTROL) => {
-                            // Handle Ctrl+C to exit
-                            println!("Exiting...");
-                            terminal::disable_raw_mode().expect("Failed to disable raw mode");
-                            std::process::exit(0);
-                        }
-                        _ => {}
-                    };
-                }
-                _ => {}
-            }
-        }
+        // if event::poll(Duration::from_millis(1)).unwrap() {
+        //     // event::read returns next available user input
+        //     let input_event = crossterm::event::read().unwrap();
+        //     // Use a match statement to check for Key events (keyboard)
+        //     match input_event {
+        //         Event::Key(KeyEvent {
+        //             code, modifiers, ..
+        //         }) => {
+        //             // Check if the `code` KeyEvent is 'p'
+        //             match code {
+        //                 KeyCode::Char('p') => {
+        //                     // toggle is_paused
+        //                     is_paused = !is_paused;
+        //                     // If pausing notify user, resuming clear preceding two lines
+        //                     if is_paused {
+        //                         print!("\n\rPaused. Press 'p' again to resume");
+        //                     } else {
+        //                         print!("\r \x1B[K"); // Clear current line
+        //                         print!("\x1B[A\x1B[K"); // Clear preceding line
+        //                     }
+        //                     io::stdout().flush().unwrap();
+        //                     // exit this iteration of the loop if pausing or resuming
+        //                     continue;
+        //                 }
+        //                 KeyCode::Char('c') if modifiers.contains(event::KeyModifiers::CONTROL) => {
+        //                     // Handle Ctrl+C to exit
+        //                     println!("Exiting...");
+        //                     terminal::disable_raw_mode().expect("Failed to disable raw mode");
+        //                     std::process::exit(0);
+        //                 }
+        //                 _ => {}
+        //             };
+        //         }
+        //         _ => {}
+        //     }
+        // }
 
         // If timer running: update UI, sleep and proceed with countdown
         if !is_paused {
