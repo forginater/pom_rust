@@ -94,7 +94,7 @@ fn countdown(interval_type: IntervalType, duration: Duration, interval_number: u
                             } else {
                                 println!("\n\rResuming...");
                             }
-                            continue; // Cancel this iteration of the while loop
+                            continue; // exit this iteration of the while loop
                         }
                         KeyCode::Char('c') if modifiers.contains(event::KeyModifiers::CONTROL) => {
                             // Handle Ctrl+C to exit
@@ -113,15 +113,18 @@ fn countdown(interval_type: IntervalType, duration: Duration, interval_number: u
         if !is_paused {
             display_countdown(&interval_type, interval_number, remaining);
             std::io::stdout().flush().expect("Failed to flush stdout");
-            std::thread::sleep(Duration::from_secs(1));
+            std::thread::sleep(Duration::from_millis(900));
             remaining -= 1;
             print!("    ##");
+        } else {
+            println!("Paused");
+            // Avoid straining CPU with busy loop while paused
+            std::thread::sleep(Duration::from_millis(100));
         }
-
-        // wait until after polling to sleep to avoid delayed pause
-        if !is_paused {}
     }
-    print_interval_done_message(&interval_type, interval_number);
+    if !is_paused {
+        print_interval_done_message(&interval_type, interval_number);
+    }
 }
 
 /*
