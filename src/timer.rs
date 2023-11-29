@@ -153,7 +153,17 @@ fn print_interval_done_message(interval_type: &IntervalType, interval_number: us
 }
 
 fn display_finish_pom(num_intervals: usize, work_interval_len: Duration) {
-    let total_work_duration = num_intervals as u64 * work_interval_len.as_secs();
+    // Calculate total time working as a Duration
+    // ??????
+    let total_work_duration = if let Ok(multiplier) = u32::try_from(num_intervals) {
+        work_interval_len
+            .checked_mul(multiplier) // Return Some(Duration) or None (if overflow)
+            .unwrap_or_else(|| Duration::new(0, 0))
+    } else {
+        // Handle potential overflow or conversion error here
+        Duration::new(0, 0)
+    };
+
     println!(
         "\n\r@{}: Pomodoro completed: \n\r\tTotal time working = {}\r",
         get_now(),
@@ -161,11 +171,13 @@ fn display_finish_pom(num_intervals: usize, work_interval_len: Duration) {
     );
 }
 
-// Convert duration (in seconds) to formatted string eg "1h 2m 2s"
-fn format_time(duration: u64) -> String {
-    let hours = duration / 3600;
-    let minutes = (duration % 3600) / 60;
-    let seconds = duration % 60;
+// Convert a Duration value to a formatted string eg "1h 2m 2s"
+fn format_time(duration_arg: Duration) -> String {
+    let total_seconds = duration_arg.as_secs();
+
+    let hours = total_seconds / 3600;
+    let minutes = (total_seconds % 3600) / 60;
+    let seconds = total_seconds % 60;
 
     let mut duration_str = String::new();
 
