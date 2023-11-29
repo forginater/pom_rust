@@ -40,6 +40,20 @@ fn timer_logic(work_interval_len: Duration, num_intervals: usize, break_interval
     println!("\nPomodoro completed");
 }
 
+/*
+countdown() Overview:
+    - invoked once for each interval (Work & Break) in timer_logic
+    - assign interval duration to remaining variable and use to countdown in the top level while loop
+    - if (!paused) print countdown message, flush stdout, sleep 1s, poll for input and decrement remaining
+    - if (paused) can only poll for input to resume
+
+    TODO
+    - Fix following bugs (maybe caused by race conditions)
+    - Bug1: updating time remaining after emitting "paused message" and successfully pausing
+    - Bug2: If pause close to end of interval, can emit paused message, but then start the next interval negating the pause state
+    - Run the poll more frequently so pause/resume is more responsive (perhaps splitting 1s into 10 iterations, polling every 100ms and rest of logic every 1000ms)
+*/
+
 #[allow(unused)]
 fn countdown(interval_type: IntervalType, duration: Duration, interval_number: usize) {
     let mut remaining: u64 = duration.as_secs();
