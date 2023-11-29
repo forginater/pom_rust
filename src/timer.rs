@@ -13,7 +13,12 @@ enum IntervalType {
     Break,
 }
 
-// Run the timer alternating between num_intervals of interval_len seconds and break intervals for break_len seconds.
+enum EventOutcome {
+    PauseToggled,
+    Exit,
+    Continue,
+}
+
 pub fn run_pomodoro(
     work_interval_len: Duration,
     num_intervals: usize,
@@ -25,13 +30,9 @@ pub fn run_pomodoro(
     terminal::disable_raw_mode().expect("Failed to disable raw mode");
 }
 
-fn get_now() -> DelayedFormat<StrftimeItems<'static>> {
-    return Local::now().format("%H:%M");
-}
-
+// Run the timer alternating between num_intervals of interval_len seconds and break intervals for break_len seconds.
 fn timer_logic(work_interval_len: Duration, num_intervals: usize, break_interval_len: Duration) {
     println!("\n@{}: Start Pomodoro", get_now());
-
     // Loop through each interval
     for interval in 1..=num_intervals {
         // Run work interval
@@ -42,100 +43,28 @@ fn timer_logic(work_interval_len: Duration, num_intervals: usize, break_interval
             interval_countdown(IntervalType::Break, break_interval_len, interval);
         }
     }
-    let total_work_duration = num_intervals as u64 * work_interval_len.as_secs();
-    println!(
-        "\n\r@{}: Pomodoro completed: Total time working = {}",
-        get_now(),
-        total_work_duration
-    );
-}
-
-fn handle_events() -> Option<bool> {
-    if event::poll(Duration::from_millis(1)).unwrap() {
-        let input_event = event::read().unwrap();
-        match input_event {
-            Event::Key(KeyEvent {
-                code, modifiers, ..
-            }) => {
-                match code {
-                    KeyCode::Char('p') => {
-                        return Some(true); //Indicate pause/resume
-                    }
-                    KeyCode::Char('c') if modifiers.contains(event::KeyModifiers::CONTROL) => {
-                        return None;
-                    }
-                    _ => {}
-                };
-            }
-            _ => {}
-        }
-    }
-    Some(false)
+    display_finish_pom(num_intervals, work_interval_len);
 }
 
 fn interval_countdown(interval_type: IntervalType, duration: Duration, interval_number: usize) {
     let mut remaining: u64 = duration.as_secs();
     let mut is_paused: bool = false;
     while remaining > 0 {
-        // Respond to keyboard events
+        // Poll for keyboard events: pause/resume and exit
         match handle_events() {
-            Some(true) => {
+            EventOutcome::PauseToggled => {
+                // Handle "p" for pause/resume
                 is_paused = !is_paused;
-                if is_paused {
-                    print!("\n\rPaused. Press 'p' again to resume");
-                } else {
-                    print!("\r \x1B[K"); // Clear current line
-                    print!("\x1B[A\x1B[K"); // Clear preceding line
-                }
-                io::stdout().flush().unwrap();
+                display_pause_toggled(is_paused);
             }
-            None => {
+            EventOutcome::Exit => {
                 // Handle Ctrl+C to exit
-                println!("Exiting...");
+                println!("\n\rExiting...\r");
                 terminal::disable_raw_mode().expect("Failed to disable raw mode");
                 std::process::exit(0);
             }
-            _ => {}
+            EventOutcome::Continue => {}
         }
-        // Non-blocking check for user input to pause the timer
-        //  - If an event is detected within 50ms, poll returns true
-        //  - NOTE: this runs approximately once per loop iteration, however keyboard input during the "sleep" duration will is queued in system's input buffer
-        // if event::poll(Duration::from_millis(1)).unwrap() {
-        //     // event::read returns next available user input
-        //     let input_event = crossterm::event::read().unwrap();
-        //     // Use a match statement to check for Key events (keyboard)
-        //     match input_event {
-        //         Event::Key(KeyEvent {
-        //             code, modifiers, ..
-        //         }) => {
-        //             // Check if the `code` KeyEvent is 'p'
-        //             match code {
-        //                 KeyCode::Char('p') => {
-        //                     // toggle is_paused
-        //                     is_paused = !is_paused;
-        //                     // If pausing notify user, resuming clear preceding two lines
-        //                     if is_paused {
-        //                         print!("\n\rPaused. Press 'p' again to resume");
-        //                     } else {
-        //                         print!("\r \x1B[K"); // Clear current line
-        //                         print!("\x1B[A\x1B[K"); // Clear preceding line
-        //                     }
-        //                     io::stdout().flush().unwrap();
-        //                     // exit this iteration of the loop if pausing or resuming
-        //                     continue;
-        //                 }
-        //                 KeyCode::Char('c') if modifiers.contains(event::KeyModifiers::CONTROL) => {
-        //                     // Handle Ctrl+C to exit
-        //                     println!("Exiting...");
-        //                     terminal::disable_raw_mode().expect("Failed to disable raw mode");
-        //                     std::process::exit(0);
-        //                 }
-        //                 _ => {}
-        //             };
-        //         }
-        //         _ => {}
-        //     }
-        // }
 
         // If timer running: update UI, sleep and proceed with countdown
         if !is_paused {
@@ -152,10 +81,49 @@ fn interval_countdown(interval_type: IntervalType, duration: Duration, interval_
     }
 }
 
+// handle_events
+//  - Non-blocking check for user input to pause the timer
+//  - If an event is detected within 50ms, poll returns true
+//  - NOTE: this runs approximately once per loop iteration, however keyboard input during the "sleep" duration will is queued in system's input buffer
+fn handle_events() -> EventOutcome {
+    if event::poll(Duration::from_millis(1)).unwrap() {
+        let input_event = event::read().unwrap();
+        match input_event {
+            Event::Key(KeyEvent {
+                code, modifiers, ..
+            }) => {
+                match code {
+                    KeyCode::Char('p') => {
+                        return EventOutcome::PauseToggled; // Indicate pause/resume
+                    }
+                    KeyCode::Char('c') if modifiers.contains(event::KeyModifiers::CONTROL) => {
+                        return EventOutcome::Exit; // Exit Program
+                    }
+                    _ => {}
+                };
+            }
+            _ => {}
+        }
+    }
+    EventOutcome::Continue
+}
+
 /*
     Functions to print the countdown state:
-    relies on carriage return "\r" for the display countdown and ASCI code "\x1B[K" to clear the line
+        "\r" = carriage return
+        "\x1B[K" clears the line
+        "\x1B[A" move cursor to previous line
 */
+
+fn display_pause_toggled(is_paused: bool) {
+    if is_paused {
+        print!("\n\rPaused. Press 'p' again to resume");
+    } else {
+        print!("\r \x1B[K"); // Clear current line
+        print!("\x1B[A\x1B[K"); // Clear preceding line
+    }
+    io::stdout().flush().unwrap();
+}
 
 fn display_countdown(interval_type: &IntervalType, interval_number: usize, remaining: u64) {
     let interval_label = match interval_type {
@@ -182,4 +150,37 @@ fn print_interval_done_message(interval_type: &IntervalType, interval_number: us
         IntervalType::Break => format!("\r@{}: Break Done \x1B[K", get_now()),
     };
     println!("{}", done_msg);
+}
+
+fn display_finish_pom(num_intervals: usize, work_interval_len: Duration) {
+    let total_work_duration = num_intervals as u64 * work_interval_len.as_secs();
+    println!(
+        "\n\r@{}: Pomodoro completed: \n\r\tTotal time working = {}\r",
+        get_now(),
+        format_time(total_work_duration)
+    );
+}
+
+// Convert duration (in seconds) to formatted string eg "1h 2m 2s"
+fn format_time(duration: u64) -> String {
+    let hours = duration / 3600;
+    let minutes = (duration % 3600) / 60;
+    let seconds = duration % 60;
+
+    let mut duration_str = String::new();
+
+    if hours > 0 {
+        duration_str.push_str(&format!("{}h ", hours));
+    }
+    if minutes > 0 {
+        duration_str.push_str(&format!("{}m ", minutes));
+    }
+    if seconds > 0 || duration_str.is_empty() {
+        duration_str.push_str(&format!("{}s", seconds));
+    }
+    return duration_str;
+}
+
+fn get_now() -> DelayedFormat<StrftimeItems<'static>> {
+    return Local::now().format("%H:%M");
 }

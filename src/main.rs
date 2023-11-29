@@ -2,9 +2,8 @@ mod user_input;
 use user_input::{
     get_break_interval_len, get_num_intervals, get_planned_action, get_work_interval_len,
 };
-mod timer_no_pause;
-use timer_no_pause::timer_logic;
 mod timer;
+mod timer_no_pause;
 use timer::run_pomodoro;
 
 fn main() {

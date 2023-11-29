@@ -1,3 +1,4 @@
+#![allow(unused)]
 use std::io::Write;
 use std::time::Duration; // Trait needs to be in scope use stdout.flush().... ??
 
