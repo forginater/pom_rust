@@ -48,10 +48,14 @@ countdown() Overview:
     - if (paused) can only poll for input to resume
 
     TODO
-    - Fix following bugs (maybe caused by race conditions)
+    - Fix following bugs
+        => maybe caused by race conditions between poll, toggling is_paused and decrementing remaining
     - Bug1: updating time remaining after emitting "paused message" and successfully pausing
     - Bug2: If pause close to end of interval, can emit paused message, but then start the next interval negating the pause state
     - Run the poll more frequently so pause/resume is more responsive (perhaps splitting 1s into 10 iterations, polling every 100ms and rest of logic every 1000ms)
+    - Clean up the terminal output
+    - Remove buffer message to numIntervals
+    - Exitting leaving terminal in strange state (due to raw_mode??)
 */
 
 #[allow(unused)]
@@ -60,16 +64,19 @@ fn countdown(interval_type: IntervalType, duration: Duration, interval_number: u
     let mut is_paused: bool = false;
 
     while remaining > 0 {
-        // Update the countdown in terminal each second
-        if !is_paused {
-            display_countdown(&interval_type, interval_number, remaining);
-            std::io::stdout().flush().expect("Failed to flush stdout");
-            remaining -= 1;
-        }
-        // Non-blocking check every 100ms for user input to pause the timer
-        // If an event is available, poll returns true
+        // Non-blocking check for user input to pause the timer
+        //  - If an event is detected within 50ms, poll returns true
+        //  - NOTE: this runs approximately once per loop iteration, however keyboard input during the "sleep" duration will is queued in system's input buffer
         if event::poll(Duration::from_millis(50)).unwrap() {
-            println!("Poll");
+            println!(
+                "\n\r    => Poll with {} Interval #{}: {} seconds remaining",
+                match interval_type {
+                    IntervalType::Work => "Work",
+                    IntervalType::Break => "Break",
+                },
+                interval_number,
+                remaining
+            );
             // event::read returns next available user input
             let input_event = crossterm::event::read().unwrap();
             // Use a match statement to check for Key events (keyboard)
@@ -87,10 +94,12 @@ fn countdown(interval_type: IntervalType, duration: Duration, interval_number: u
                             } else {
                                 println!("\n\rResuming...");
                             }
+                            continue; // Cancel this iteration of the while loop
                         }
                         KeyCode::Char('c') if modifiers.contains(event::KeyModifiers::CONTROL) => {
                             // Handle Ctrl+C to exit
                             println!("Exiting...");
+                            terminal::disable_raw_mode().expect("Failed to disable raw mode");
                             std::process::exit(0);
                         }
                         _ => {}
@@ -99,10 +108,18 @@ fn countdown(interval_type: IntervalType, duration: Duration, interval_number: u
                 _ => {}
             }
         }
-        // wait until after polling to sleep to avoid delayed pause
+
+        // If running: proceed with countdown
         if !is_paused {
+            display_countdown(&interval_type, interval_number, remaining);
+            std::io::stdout().flush().expect("Failed to flush stdout");
             std::thread::sleep(Duration::from_secs(1));
+            remaining -= 1;
+            print!("    ##");
         }
+
+        // wait until after polling to sleep to avoid delayed pause
+        if !is_paused {}
     }
     print_interval_done_message(&interval_type, interval_number);
 }
