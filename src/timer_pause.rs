@@ -1,3 +1,5 @@
+use chrono::format::{DelayedFormat, StrftimeItems};
+use chrono::Local;
 use std::io::{self, Write};
 use std::time::Duration; // Trait needs to be in scope use stdout.flush().... ??
 
@@ -23,24 +25,27 @@ pub fn run_pomodoro(
     terminal::disable_raw_mode().expect("Failed to disable raw mode");
 }
 
+fn get_now() -> DelayedFormat<StrftimeItems<'static>> {
+    return Local::now().format("%H:%M");
+}
+
 fn timer_logic(work_interval_len: Duration, num_intervals: usize, break_interval_len: Duration) {
-    let interval_seconds = work_interval_len.as_secs();
-    println!("\nPomodoro Timer Started: {num_intervals} intervals of {interval_seconds} \n");
+    println!("\n@{}: Start Pomodoro", get_now());
 
     // Loop through each interval
     for interval in 1..=num_intervals {
         // Run work interval
-        countdown(IntervalType::Work, work_interval_len, interval);
+        interval_countdown(IntervalType::Work, work_interval_len, interval);
 
         // Run Work interval if requested except after the last work interval
         if break_interval_len > Duration::from_secs(0) && interval < num_intervals {
-            countdown(IntervalType::Break, break_interval_len, interval);
+            interval_countdown(IntervalType::Break, break_interval_len, interval);
         }
     }
-    println!("\nPomodoro completed");
+    println!("\n\r@{}: Pomodoro completed", get_now());
 }
 
-fn countdown(interval_type: IntervalType, duration: Duration, interval_number: usize) {
+fn interval_countdown(interval_type: IntervalType, duration: Duration, interval_number: usize) {
     let mut remaining: u64 = duration.as_secs();
     let mut is_paused: bool = false;
     while remaining > 0 {
@@ -119,9 +124,13 @@ fn display_countdown(interval_type: &IntervalType, interval_number: usize, remai
 fn print_interval_done_message(interval_type: &IntervalType, interval_number: usize) {
     let done_msg = match interval_type {
         IntervalType::Work => {
-            format!("\rInterval #{} done  \x1B[K", interval_number)
+            format!(
+                "\r@{}: Completed Interval #{}  \x1B[K",
+                get_now(),
+                interval_number
+            )
         }
-        IntervalType::Break => format!("\rBreak Done \x1B[K"),
+        IntervalType::Break => format!("\r@{}: Break Done \x1B[K", get_now()),
     };
     println!("{}", done_msg);
 }
