@@ -1,7 +1,8 @@
-use std::time::Duration; // Trait needs to be in scope use stdout.flush().... ??
-                         /*
-                             Get User Input to configure pomodoro timer
-                         */
+use std::time::Duration;
+
+/*
+    Get User Input to configure pomodoro timer
+*/
 
 // &str can only read, we don't have ownership, unlike String.
 fn get_num_from_terminal(input_prompt: &str) -> usize {
