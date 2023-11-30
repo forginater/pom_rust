@@ -6,7 +6,17 @@ mod timer;
 mod timer_no_pause;
 use timer::run_pomodoro;
 
+use crossterm::terminal;
+use std::panic;
+
 fn main() {
+    let default_panic = panic::take_hook();
+    panic::set_hook(Box::new(move |panic_reason| {
+        // assign result to blubli
+        let _ = terminal::disable_raw_mode();
+        // Make sure to run default panic hook
+        default_panic(panic_reason);
+    }));
     // Pom takes user input (numIntervals, intervalLen) and runs a timer numIntervals times each for a length of intervalLen
     // Get user input
     let num_intervals = get_num_intervals();
