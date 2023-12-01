@@ -6,8 +6,15 @@ mod timer;
 mod timer_no_pause;
 use timer::run_pomodoro;
 
-use crossterm::terminal;
 use std::panic;
+
+use crossterm::{
+    cursor::MoveTo,
+    execute,
+    terminal::{self, Clear, ClearType},
+};
+
+use std;
 
 fn main() {
     let default_panic = panic::take_hook();
@@ -17,6 +24,11 @@ fn main() {
         // Make sure to run default panic hook
         default_panic(panic_reason);
     }));
+
+    // Clear the screen and move the cursor to the top
+    execute!(std::io::stdout(), Clear(ClearType::All), MoveTo(0, 0))
+        .expect("Failed to clear screen and move to top");
+
     // Pom takes user input (numIntervals, intervalLen) and runs a timer numIntervals times each for a length of intervalLen
     // Get user input
     let num_intervals = get_num_intervals();
