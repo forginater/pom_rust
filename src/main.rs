@@ -4,32 +4,17 @@ use user_input::{
 };
 mod timer;
 mod timer_no_pause;
+mod util;
+
 use timer::run_pomodoro;
-
-use std::panic;
-
-use crossterm::{
-    cursor::MoveTo,
-    execute,
-    terminal::{self, Clear, ClearType},
-};
-
-use std;
+use util::{clear_screen, setup_panic_handler};
 
 fn main() {
-    let default_panic = panic::take_hook();
-    panic::set_hook(Box::new(move |panic_reason| {
-        // assign result to blubli
-        let _ = terminal::disable_raw_mode();
-        // Make sure to run default panic hook
-        default_panic(panic_reason);
-    }));
-
+    // Setup panic handler to disable raw_mode if program exits in panic state
+    setup_panic_handler();
     // Clear the screen and move the cursor to the top
-    execute!(std::io::stdout(), Clear(ClearType::All), MoveTo(0, 0))
-        .expect("Failed to clear screen and move to top");
+    clear_screen();
 
-    // Pom takes user input (numIntervals, intervalLen) and runs a timer numIntervals times each for a length of intervalLen
     // Get user input
     let num_intervals = get_num_intervals();
     let interval_len = get_work_interval_len();
@@ -38,5 +23,4 @@ fn main() {
 
     // Run the pomodoro timer
     run_pomodoro(interval_len, num_intervals, break_interval);
-    // timer_logic(interval_len, num_intervals, break_interval);
 }
