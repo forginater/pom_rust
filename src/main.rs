@@ -4,10 +4,17 @@ use user_input::{
 };
 mod timer;
 mod timer_no_pause;
+mod util;
+
 use timer::run_pomodoro;
+use util::{clear_screen, setup_panic_handler};
 
 fn main() {
-    // Pom takes user input (numIntervals, intervalLen) and runs a timer numIntervals times each for a length of intervalLen
+    // Setup panic handler to disable raw_mode if program exits in panic state
+    setup_panic_handler();
+    // Clear the screen and move the cursor to the top
+    clear_screen();
+
     // Get user input
     let num_intervals = get_num_intervals();
     let interval_len = get_work_interval_len();
@@ -16,5 +23,4 @@ fn main() {
 
     // Run the pomodoro timer
     run_pomodoro(interval_len, num_intervals, break_interval);
-    // timer_logic(interval_len, num_intervals, break_interval);
 }
