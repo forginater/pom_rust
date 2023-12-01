@@ -19,6 +19,11 @@ enum EventOutcome {
     Continue,
 }
 
+enum TimeFormat {
+    Verbose,
+    Compact,
+}
+
 pub fn run_pomodoro(
     work_interval_len: Duration,
     num_intervals: usize,
@@ -130,9 +135,11 @@ fn display_countdown(interval_type: &IntervalType, interval_number: usize, remai
         IntervalType::Work => "Work",
         IntervalType::Break => "Break",
     };
+    let remaining_formatted: String =
+        format_time(Duration::from_secs(remaining), TimeFormat::Compact);
     print!(
-        "\r{} Interval #{}: {} seconds remaining",
-        interval_label, interval_number, remaining
+        "\r{} Interval #{}: remaining = {}",
+        interval_label, interval_number, remaining_formatted
     );
     // Neccessary because Rust's stdout is line-buffered by default
     std::io::stdout().flush().expect("Failed to flush stdout");
@@ -167,30 +174,43 @@ fn display_finish_pom(num_intervals: usize, work_interval_len: Duration) {
     println!(
         "\n\r@{}: Pomodoro completed: \n\r\tTotal time working = {}\r",
         get_now(),
-        format_time(total_work_duration)
+        format_time(total_work_duration, TimeFormat::Verbose)
     );
 }
 
 // Convert a Duration value to a formatted string eg "1h 2m 2s"
-fn format_time(duration_arg: Duration) -> String {
+fn format_time(duration_arg: Duration, format: TimeFormat) -> String {
     let total_seconds = duration_arg.as_secs();
 
     let hours = total_seconds / 3600;
     let minutes = (total_seconds % 3600) / 60;
     let seconds = total_seconds % 60;
 
-    let mut duration_str = String::new();
+    match format {
+        TimeFormat::Verbose => {
+            let mut duration_str = String::new();
 
-    if hours > 0 {
-        duration_str.push_str(&format!("{}h ", hours));
+            if hours > 0 {
+                duration_str.push_str(&format!("{}h ", hours));
+            }
+            if minutes > 0 {
+                duration_str.push_str(&format!("{}m ", minutes));
+            }
+            if seconds > 0 || duration_str.is_empty() {
+                duration_str.push_str(&format!("{}s", seconds));
+            }
+            duration_str
+        }
+        TimeFormat::Compact => {
+            if hours > 0 {
+                return format!("{:02}:{:02}:{:02}", hours, minutes, seconds);
+            } else if minutes > 0 {
+                return format!("{:02}:{:02}", minutes, seconds);
+            } else {
+                return format!("{} seconds", seconds);
+            }
+        }
     }
-    if minutes > 0 {
-        duration_str.push_str(&format!("{}m ", minutes));
-    }
-    if seconds > 0 || duration_str.is_empty() {
-        duration_str.push_str(&format!("{}s", seconds));
-    }
-    return duration_str;
 }
 
 fn get_now() -> DelayedFormat<StrftimeItems<'static>> {
