@@ -12,7 +12,12 @@ use util::{clear_screen, setup_panic_handler};
 use std::env;
 use std::time::Duration;
 
+const TESTING: bool = false;
+
 fn main() {
+    // time_scale_factor = seconds per minute (shorten for testing)
+    let time_scale_factor = if TESTING { 1 } else { 60 };
+
     // Get command line args
     let args: Vec<String> = env::args().collect();
 
@@ -42,13 +47,14 @@ fn main() {
             let num_intervals = args[1]
                 .parse::<usize>()
                 .expect("Invalid number for intervals");
-            let interval_len =
-                Duration::from_secs(args[2].parse::<u64>().expect("Invalid interval length") * 60);
+            let interval_len = Duration::from_secs(
+                args[2].parse::<u64>().expect("Invalid interval length") * time_scale_factor,
+            );
             let break_interval = Duration::from_secs(
                 args[3]
                     .parse::<u64>()
                     .expect("Invalid break interval length")
-                    * 60,
+                    * time_scale_factor,
             );
             let _activity = &args[4];
             run_pomodoro(interval_len, num_intervals, break_interval);
