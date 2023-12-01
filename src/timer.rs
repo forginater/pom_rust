@@ -130,9 +130,10 @@ fn display_countdown(interval_type: &IntervalType, interval_number: usize, remai
         IntervalType::Work => "Work",
         IntervalType::Break => "Break",
     };
+    let remaining_formatted: String = format_time(Duration::from_secs(remaining));
     print!(
-        "\r{} Interval #{}: {} seconds remaining",
-        interval_label, interval_number, remaining
+        "\r{} Interval #{}: {} remaining",
+        interval_label, interval_number, remaining_formatted
     );
     // Neccessary because Rust's stdout is line-buffered by default
     std::io::stdout().flush().expect("Failed to flush stdout");
@@ -169,6 +170,11 @@ fn display_finish_pom(num_intervals: usize, work_interval_len: Duration) {
         get_now(),
         format_time(total_work_duration)
     );
+}
+
+enum TimeFormat {
+    Verbose,
+    Compact,
 }
 
 // Convert a Duration value to a formatted string eg "1h 2m 2s"
